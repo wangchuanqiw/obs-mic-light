@@ -1,0 +1,5 @@
+# OBS 麦克风状态指示灯 配置文件（用记事本编辑，等号前后不要有空格）
+# password：OBS WebSocket 服务器设置的密码，没设密码就保持空
+password=
+# input_name：要监控的输入源名称，留空则自动探测第一个麦克风
+input_name=麦克风_桌面
