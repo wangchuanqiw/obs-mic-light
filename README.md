@@ -134,7 +134,14 @@ pip install pyinstaller pillow
 pyinstaller packaging/obs_mic_light.spec      # 产物在 dist/
 ```
 
-推送 `v*` 标签后，GitHub Actions 会自动在 Windows / Mac 上打包并发布到 Releases（见 `.github/workflows/release.yml`）。
+### 测试
+
+```bash
+pip install -r tests/requirements.txt
+python tests/e2e_fake_obs.py     # 起一个"假 OBS"，验证连接、认证、静音事件、改名、断线重连
+```
+
+每次推送代码，GitHub Actions 会在干净的 Windows 和 macOS 虚拟机上（Python 3.9 / 3.13）从零安装依赖并跑这个测试。推送 `v*` 标签后，还会自动在 Windows / Mac 上打包并发布到 Releases（见 `.github/workflows/release.yml`）。
 
 ### 工作原理
 

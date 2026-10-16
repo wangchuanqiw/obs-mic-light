@@ -1,17 +1,43 @@
-# 推送 v* 标签（如 v4.0.0）时：在 Windows / Mac 上打包，冒烟测试，然后发布到 Releases。
-# 也可以在 Actions 页面手动运行（只打包、不发布）。
+# 每次推代码 / 提 PR：在干净的 Windows、Mac 虚拟机上从零装依赖，跑"假 OBS"端到端测试。
+# 推送 v* 标签（如 v4.0.0）时：测试通过后再打包 exe / app，冒烟测试，发布到 Releases。
+# 也可以在 Actions 页面手动运行（测试 + 打包，不发布）。
 name: build-release
 
 on:
   push:
+    branches: [main]
     tags: ["v*"]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
+  source-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14]
+        python: ["3.9", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: 从零安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r tests/requirements.txt
+      - name: 假 OBS 端到端测试
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python tests/e2e_fake_obs.py
+
   build:
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: source-test
     strategy:
       fail-fast: false
       matrix:
@@ -24,9 +50,9 @@ jobs:
             asset: OBS-Mic-Light-macOS-Intel.zip
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
@@ -70,7 +96,7 @@ jobs:
         if: runner.os == 'macOS'
         run: ditto -c -k --keepParent "dist/OBS Mic Light.app" "${{ matrix.asset }}"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: ${{ matrix.asset }}
           path: ${{ matrix.asset }}
@@ -80,7 +106,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           path: assets
           merge-multiple: true
