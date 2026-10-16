@@ -1,14 +1,22 @@
-# 程序运行产生的文件（不要上传到 GitHub）
+# 运行时生成（不要上传）
+config.txt
 _log.txt
+_log.old.txt
 .light_pos.json
+.lock
 
 # Python
 __pycache__/
 *.py[cod]
+.venv/
+venv/
 
-# macOS
+# 打包产物
+build/
+dist/
+
+# 系统 / 编辑器
 .DS_Store
-
-# 编辑器
+Thumbs.db
 .idea/
 .vscode/

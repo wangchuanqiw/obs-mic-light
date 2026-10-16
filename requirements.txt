@@ -1,3 +1,2 @@
-PyQt5>=5.15.4
-obsws-python>=1.6.0
-pynput>=1.7.3
+PySide6-Essentials>=6.5
+websocket-client>=1.6

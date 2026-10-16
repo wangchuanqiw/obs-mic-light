@@ -1,0 +1,90 @@
+# 推送 v* 标签（如 v4.0.0）时：在 Windows / Mac 上打包，冒烟测试，然后发布到 Releases。
+# 也可以在 Actions 页面手动运行（只打包、不发布）。
+name: build-release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: OBS-Mic-Light-Windows.zip
+          - os: macos-14
+            asset: OBS-Mic-Light-macOS-AppleSilicon.zip
+          - os: macos-15-intel
+            asset: OBS-Mic-Light-macOS-Intel.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller pillow
+
+      - name: Build
+        run: pyinstaller --noconfirm packaging/obs_mic_light.spec
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $p = Start-Process -FilePath "dist/OBS Mic Light/OBS Mic Light.exe" -PassThru
+          Start-Sleep -Seconds 8
+          Stop-Process -Id $p.Id -Force
+          $log = Get-Content "$env:APPDATA/OBSMicLight/_log.txt" -Encoding UTF8 -Raw
+          Write-Output $log
+          if ($log -notmatch "指示灯已启动") { throw "smoke test failed" }
+
+      - name: Smoke test (macOS)
+        if: runner.os == 'macOS'
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          "dist/OBS Mic Light.app/Contents/MacOS/OBS Mic Light" &
+          sleep 8; kill $! || true
+          cat "$HOME/Library/Application Support/OBSMicLight/_log.txt"
+          grep -q "指示灯已启动" "$HOME/Library/Application Support/OBSMicLight/_log.txt"
+
+      - name: Zip (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path "dist/OBS Mic Light" -DestinationPath "${{ matrix.asset }}"
+
+      - name: Zip (macOS)
+        if: runner.os == 'macOS'
+        run: ditto -c -k --keepParent "dist/OBS Mic Light.app" "${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: assets
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: assets/*.zip
+          generate_release_notes: true
