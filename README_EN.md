@@ -15,6 +15,9 @@ A tiny always-on-top dot that shows whether your **OBS microphone is live or mut
 
 ## Quick start
 
+> **Just want to use it?** Download the package below — **no Python needed**.
+> **Want to read or modify the code?** See [Run from source](#run-from-source) (requires Python 3.9+).
+
 1. **OBS → Tools → WebSocket Server Settings** → check **Enable WebSocket server** → **Show Connect Info** → copy the **Server Password** → OK. (OBS 28+)
 2. Download from **[Releases](https://github.com/wangchuanqiw/obs-mic-light/releases/latest)**:
    - Windows: `OBS-Mic-Light-Windows.zip` → unzip → run `OBS Mic Light.exe`
